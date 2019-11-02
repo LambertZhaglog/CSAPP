@@ -1,0 +1,9 @@
+#include<stdio.h>
+
+int main(){
+  int x=0xff;
+  printf("x=0x%x",x);
+  printf("~x=0x%x",~x);
+  printf("!x=0x%x",!x);
+  return 1;
+}
