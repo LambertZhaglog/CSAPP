@@ -1,0 +1,81 @@
+#Sample linked list
+	.pos 0
+init:	irmovl Stack, %esp
+	irmovl Stack, %ebp
+	call Main
+	halt
+#elements
+	.align 4
+# Source block
+src:
+	.long 0x00a
+	.long 0x0b0
+	.long 0xc00
+# Destination block
+dest:
+	.long 0x111
+	.long 0x222
+	.long 0x333
+Main:	pushl %ebp
+	rrmovl %esp, %ebp	
+	irmovl 3, %edx
+	pushl %edx
+	irmovl dest, %edx
+	pushl %edx
+	irmovl src, %edx
+	pushl %edx
+	call copy_block
+	rrmovl %ebp, %esp
+	popl %ebp
+	ret
+copy_block:
+	pushl %ebp
+	rrmovl %esp, %ebp
+	
+	irmovl $16, %ebx # ebx=16
+	subl %ebx, %esp # subl $16, esp
+	
+	irmovl $0, %edi # edi=0
+	rmmovl %edi, -4(%ebp) #movl $0 -4(ebp) # set &val=-4(ebp), val=0
+	
+	jmp L9
+L10:
+	mrmovl 8(%ebp), %eax
+	
+	irmovl $4, %edx
+	addl %eax, %edx # leal 4(%eax), %edx
+	
+	rmmovl %edx ,8(%ebp)
+	mrmovl (%eax), %eax
+	rmmovl %eax, -8(%ebp)
+	mrmovl 12(%ebp), %eax
+	
+	irmovl $4, %edx
+	addl %eax, %edx # leal 4(%eax), %edx
+	
+	rmmovl %edx, 12(%ebp)
+	mrmovl	-8(%ebp), %edx
+	rmmovl	%edx, (%eax)
+	mrmovl	-8(%ebp), %eax
+	
+	mrmovl -4(%ebp), %ecx
+	xorl %eax, %ecx
+	rmmovl %ecx, -4(%ebp) #	xorl	%eax, -4(%ebp)
+	
+	mrmovl 16(%ebp), %ecx
+	irmovl 1, %edi
+	subl %edi, %ecx
+	rmmovl %ecx, 16(%ebp) # subl	$1, 16(%ebp)
+L9:
+	mrmovl 16(%ebp), %edx
+	irmovl $0, %ecx
+	subl %ecx, %edx
+	
+	jg L10
+	mrmovl -4(%ebp), %eax
+	
+	rrmovl %ebp, %esp
+	popl %ebp
+	ret
+	.pos 0x1000
+Stack:	

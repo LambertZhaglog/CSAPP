@@ -1,0 +1,57 @@
+                      | #Sample linked list
+  0x000:              | 	.pos 0
+  0x000: 30f400100000 | init:	irmovl Stack, %esp
+  0x006: 30f500100000 | 	irmovl Stack, %ebp
+  0x00c: 802c000000   | 	call Main
+  0x011: 00           | 	halt
+                      | #elements
+  0x014:              | 	.align 4
+  0x014:              | ele1:
+  0x014: 0a000000     | 	.long 0x00a
+  0x018: 1c000000     | 	.long ele2
+  0x01c:              | ele2:
+  0x01c: b0000000     | 	.long 0x0b0
+  0x020: 24000000     | 	.long ele3
+  0x024:              | ele3:
+  0x024: 000c0000     | 	.long 0xc00
+  0x028: 00000000     | 	.long 0
+  0x02c: a05f         | Main:	pushl %ebp
+  0x02e: 2045         | 	rrmovl %esp, %ebp
+  0x030: 30f214000000 | 	irmovl ele1, %edx
+  0x036: a02f         | 	pushl %edx
+  0x038: 8042000000   | 	call rsum_list
+  0x03d: b02f         | 	popl %edx
+  0x03f: b05f         | 	popl %ebp
+  0x041: 90           | 	ret
+  0x042:              | rsum_list:
+  0x042: a05f         | 	pushl %ebp
+  0x044: 2045         | 	rrmovl %esp, %ebp
+  0x046: 30f218000000 | 	irmovl $24, %edx # ebx=24
+  0x04c: 6124         | 	subl %edx, %esp # subl $24, esp
+  0x04e: 502508000000 | 	mrmovl 8(%ebp),%edx
+  0x054: 6222         | 	andl %edx,%edx #cmpl $0, 8(%ebp)
+  0x056: 7466000000   | 	jne L6 
+  0x05b: 30f000000000 | 	irmovl $0, %eax # edi=0
+  0x061: 70af000000   | 	jmp L7
+  0x066:              | L6:
+  0x066: 500508000000 | 	mrmovl 8(%ebp), %eax
+  0x06c: 500000000000 | 	mrmovl 0(%eax), %eax	
+  0x072: 4005f4ffffff | 	rmmovl %eax, -12(%ebp)
+  0x078: 500508000000 | 	mrmovl 8(%ebp), %eax
+  0x07e: 500004000000 | 	mrmovl 4(%eax), %eax
+  0x084: 30f20c000000 | 	irmovl $12, %edx
+  0x08a: 6124         | 	subl %edx, %esp #subl $12, %esp
+  0x08c: a00f         | 	pushl %eax
+  0x08e: 8042000000   | 	call rsum_list
+  0x093: 30f210000000 | 	irmovl $16, %edx
+  0x099: 6124         | 	subl %edx, %esp #andl $16, %esp
+  0x09b: 4005f0ffffff | 	rmmovl %eax, -16(%ebp)
+  0x0a1: 5025f4ffffff | 	mrmovl -12(%ebp), %edx
+  0x0a7: 5005f0ffffff | 	mrmovl -16(%ebp), %eax
+  0x0ad: 6020         | 	addl %edx, %eax
+  0x0af:              | L7:
+  0x0af: 2054         | 	rrmovl %ebp, %esp
+  0x0b1: b05f         | 	popl %ebp
+  0x0b3: 90           | 	ret
+  0x000:              | 	.pos 0x1000
+  0x000:              | Stack:	
