@@ -427,7 +427,6 @@ static int add_range(range_t **ranges, char *lo, int size,
     *ranges = p;
     return 1;
 }
-
 /* 
  * remove_range - Free the range record of block whose payload starts at lo 
  */

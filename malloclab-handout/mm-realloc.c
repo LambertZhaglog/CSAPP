@@ -409,8 +409,8 @@ void *mm_realloc(void *ptr, size_t size)
 {
   void *newptr;
   size_t oldsize;
-  printf(" realloc addr = %x to size = %d\n",ptr,size);
-  checkheap();
+  //  printf(" realloc addr = %x to size = %d\n",ptr,size);
+  //  checkheap();
   /* If size ==0 then this is just free, and we return NULL */
   if(size==0){
     mm_free(ptr);
@@ -469,6 +469,7 @@ void *mm_realloc(void *ptr, size_t size)
       }
       unsigned int pred=GET(ptr);
       unsigned int succ=GET(SUCC(ptr));
+      //     printf("tag 1\n");
       mm_free(ptr);
       if(totalsize-asize>=2*DSIZE){
 	// split
@@ -481,6 +482,7 @@ void *mm_realloc(void *ptr, size_t size)
 	void *bp = NEXT_BLKP(newptr);
 	PUT(HDRP(bp), PACK(totalsize-asize, 0));
 	PUT(FTRP(bp), PACK(totalsize-asize, 0));
+	//	printf("tag 2\n");
 	coalesce(bp);
       }else{
 	place(newptr,totalsize);
@@ -488,8 +490,8 @@ void *mm_realloc(void *ptr, size_t size)
 	PUT(PRED(newptr),pred);
 	PUT(SUCC(newptr),succ);
       }
-       printf("after realloc\n");
-       checkheap();
+      //      printf("after realloc\n");
+      //     checkheap();
       return newptr;
     }else{// the neibors space not enough to realloc 
       newptr=mm_malloc(size);
@@ -498,8 +500,6 @@ void *mm_realloc(void *ptr, size_t size)
       }
       memcpy(newptr,ptr,oldsize-0*WSIZE);
       mm_free(ptr);
-       printf("after realloc\n");
-       checkheap();
       return newptr;
     }
   }

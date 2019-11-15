@@ -44,8 +44,7 @@ team_t team = {
 /* Basic constants and macros */
 #define WSIZE 4      /* Word and header/footer size (byte) */
 #define DSIZE 8      /* Double word size (byte) */
-//#define CHUNKSIZE (1<<12) /*Extend heap by this amount (bytes) */
-#define CHUNKSIZE ((1<<12)+8)
+#define CHUNKSIZE (1<<12) /*Extend heap by this amount (bytes) */
 
 #define MAX(x,y) ((x) > (y)? (x) : (y))
 
@@ -409,8 +408,7 @@ void *mm_realloc(void *ptr, size_t size)
 {
   void *newptr;
   size_t oldsize;
-  printf(" realloc addr = %x to size = %d\n",ptr,size);
-  checkheap();
+
   /* If size ==0 then this is just free, and we return NULL */
   if(size==0){
     mm_free(ptr);
@@ -422,87 +420,21 @@ void *mm_realloc(void *ptr, size_t size)
     return mm_malloc(size);
   }
 
-  /* old version 
-     newptr=mm_malloc(size);
+  newptr=mm_malloc(size);
 
-     /* if reallloc fails the original block if left untouched *
-     if(!newptr){
-     return 0;
-     }
-
-     /* Copy the old data *
-     oldsize = GET_SIZE(HDRP(ptr));
-     if(size<oldsize)
-     oldsize =size;
-     memcpy(newptr,ptr,oldsize);
-  
-     mm_free(ptr);
-     return newptr;
-  */
-  oldsize=GET_SIZE(HDRP(ptr));
-  size_t asize=DSIZE*((size+(DSIZE)+(DSIZE-1))/DSIZE);
-  if(asize<=oldsize){//realloc try to reduce the allocate space
-    //checked
-    if(oldsize-size>=2*DSIZE){
-      PUT(HDRP(ptr),PACK(asize,1));
-      PUT(FTRP(ptr),PACK(asize,1));
-      void *bp=NEXT_BLKP(ptr);
-      PUT(HDRP(bp),PACK(oldsize-asize,0));
-      PUT(FTRP(bp),PACK(oldsize-asize,0));
-      coalesce(bp);
-    }else{
-      //do nothing
-    }
-    return ptr;
-  }else{
-    size_t totalsize=GET_ALLOC(HDRP(PREV_BLKP(ptr)))==0?
-      GET_SIZE(HDRP(PREV_BLKP(ptr))):0;
-    totalsize+=GET_ALLOC(HDRP(NEXT_BLKP(ptr)))==0?
-      GET_SIZE(HDRP(NEXT_BLKP(ptr))):0;
-    totalsize+=oldsize;
-    //   printf("total size is %d\n",totalsize);
-    if(asize<=totalsize){
-      if(GET_ALLOC(HDRP(PREV_BLKP(ptr)))==0){
-	newptr=PREV_BLKP(ptr);
-      }else{
-	newptr=ptr;
-      }
-      unsigned int pred=GET(ptr);
-      unsigned int succ=GET(SUCC(ptr));
-      mm_free(ptr);
-      if(totalsize-asize>=2*DSIZE){
-	// split
-	place(newptr,totalsize);
-	PUT(HDRP(newptr), PACK(asize, 1));
-	memmove(newptr,ptr,oldsize-2*WSIZE);
-	PUT(FTRP(newptr), PACK(asize, 1)); 
-	PUT(PRED(newptr),pred);
-	PUT(SUCC(newptr),succ);
-	void *bp = NEXT_BLKP(newptr);
-	PUT(HDRP(bp), PACK(totalsize-asize, 0));
-	PUT(FTRP(bp), PACK(totalsize-asize, 0));
-	coalesce(bp);
-      }else{
-	place(newptr,totalsize);
-	memmove(newptr,ptr,oldsize-0*WSIZE);
-	PUT(PRED(newptr),pred);
-	PUT(SUCC(newptr),succ);
-      }
-       printf("after realloc\n");
-       checkheap();
-      return newptr;
-    }else{// the neibors space not enough to realloc 
-      newptr=mm_malloc(size);
-      if(!newptr){
-	return 0;
-      }
-      memcpy(newptr,ptr,oldsize-0*WSIZE);
-      mm_free(ptr);
-       printf("after realloc\n");
-       checkheap();
-      return newptr;
-    }
+  /* if reallloc fails the original block if left untouched */
+  if(!newptr){
+    return 0;
   }
+
+  /* Copy the old data */
+  oldsize = GET_SIZE(HDRP(ptr));
+  if(size<oldsize)
+    oldsize =size;
+  memcpy(newptr,ptr,oldsize);
+  
+  mm_free(ptr);
+  return newptr;
 }
 
 /*

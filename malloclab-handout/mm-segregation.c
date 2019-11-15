@@ -44,8 +44,7 @@ team_t team = {
 /* Basic constants and macros */
 #define WSIZE 4      /* Word and header/footer size (byte) */
 #define DSIZE 8      /* Double word size (byte) */
-//#define CHUNKSIZE (1<<12) /*Extend heap by this amount (bytes) */
-#define CHUNKSIZE ((1<<12)+8)
+#define CHUNKSIZE (1<<12) /*Extend heap by this amount (bytes) */
 
 #define MAX(x,y) ((x) > (y)? (x) : (y))
 
@@ -143,10 +142,10 @@ int mm_init(void)
  */
 void *mm_malloc(size_t size)
 {
-#if DEBUG
+  #if DEBUG
   printf(" malloc size = %d \n",size);
   checkheap();
-#endif
+  #endif
   size_t asize; /* Adjusted block size */
   size_t extendsize; /* Amount to extend heap if not fit */
   char *bp;
@@ -169,61 +168,22 @@ void *mm_malloc(size_t size)
      asize=DSIZE*((size + (DSIZE) + (DSIZE-1))/DSIZE);
   */
   asize=DSIZE*((size+(DSIZE)+(DSIZE-1))/DSIZE);
-  /* old verion 
-     /* Search the free list for a fit *
-     if((bp=find_fit(asize))!=NULL){
-     place(bp,asize);
-     return bp;
-     }
-     /* Here I can implement my new stratege */
-  // to do for next version
-  
-  /* No fit found. Get more memory and place the block *
-     extendsize=MAX(asize,CHUNKSIZE);
-     if((bp=extend_heap(extendsize/WSIZE))==NULL)
-     return NULL;
-     place(bp,asize);
-     return bp;
-  */
 
-  /* new version use preallocate method */
-  if((bp=find_fit(asize))==NULL){
-    extendsize=MAX(asize,CHUNKSIZE);
-    if((bp=extend_heap(extendsize/WSIZE))==NULL)
-      return NULL;
-  }
-  if(GET_SIZE(HDRP(bp))>=2*asize){
-    size_t csize=GET(HDRP(bp));
-    /* update the header */
-    place(bp,csize);// remove this block from list
-    // add prealloc space
-    PUT(HDRP(bp),PACK(asize,0));
-    PUT(FTRP(bp),PACK(asize,0));
-    bp=NEXT_BLKP(bp);
-    PUT(HDRP(bp),PACK(csize-asize,1));
-    PUT(FTRP(bp),PACK(csize-asize,1));
-    coalesce(PREV_BLKP(bp));//mount preallocate block to the link list
-    
-    csize=GET_SIZE(HDRP(bp));
-    if ((csize - asize) >= (2*DSIZE)) { 
-      PUT(HDRP(bp), PACK(asize, 1));
-      PUT(FTRP(bp), PACK(asize, 1)); 
-      bp = NEXT_BLKP(bp);
-      PUT(HDRP(bp), PACK(csize-asize, 0));
-      PUT(FTRP(bp), PACK(csize-asize, 0));
-      coalesce(bp);
-      bp=PREV_BLKP(bp);
-    }
-    else { 
-      PUT(HDRP(bp), PACK(csize, 1));
-      PUT(FTRP(bp), PACK(csize, 1));
-    }
-    return bp;
-    
-  }else{
+  /* Search the free list for a fit */
+  if((bp=find_fit(asize))!=NULL){
     place(bp,asize);
     return bp;
   }
+  /* Here I can implement my new stratege */
+  // to do for next version
+  
+  /* No fit found. Get more memory and place the block */
+  extendsize=MAX(asize,CHUNKSIZE);
+  if((bp=extend_heap(extendsize/WSIZE))==NULL)
+    return NULL;
+  place(bp,asize);
+  return bp;
+  
 }
 
 /*
@@ -231,10 +191,10 @@ void *mm_malloc(size_t size)
  */
 void mm_free(void *ptr)
 {
-#if DEBUG
+  #if DEBUG
   printf(" free addr = %x\n",ptr);
   checkheap();
-#endif
+  #endif
   void *bp=ptr;
   if(bp==0)
     return;
@@ -251,10 +211,10 @@ void mm_free(void *ptr)
  * this function is responsible to set the free block in the right link list 
  */
 static void *coalesce(void *bp){
-#if DEBUG
+  #if DEBUG
   printf(" coalesce addr = %x\n",bp);
   checkheap();
-#endif
+  #endif
   size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(bp)));
   size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp)));
   size_t size =GET_SIZE(HDRP(bp));
@@ -409,8 +369,7 @@ void *mm_realloc(void *ptr, size_t size)
 {
   void *newptr;
   size_t oldsize;
-  printf(" realloc addr = %x to size = %d\n",ptr,size);
-  checkheap();
+
   /* If size ==0 then this is just free, and we return NULL */
   if(size==0){
     mm_free(ptr);
@@ -422,87 +381,21 @@ void *mm_realloc(void *ptr, size_t size)
     return mm_malloc(size);
   }
 
-  /* old version 
-     newptr=mm_malloc(size);
+  newptr=mm_malloc(size);
 
-     /* if reallloc fails the original block if left untouched *
-     if(!newptr){
-     return 0;
-     }
-
-     /* Copy the old data *
-     oldsize = GET_SIZE(HDRP(ptr));
-     if(size<oldsize)
-     oldsize =size;
-     memcpy(newptr,ptr,oldsize);
-  
-     mm_free(ptr);
-     return newptr;
-  */
-  oldsize=GET_SIZE(HDRP(ptr));
-  size_t asize=DSIZE*((size+(DSIZE)+(DSIZE-1))/DSIZE);
-  if(asize<=oldsize){//realloc try to reduce the allocate space
-    //checked
-    if(oldsize-size>=2*DSIZE){
-      PUT(HDRP(ptr),PACK(asize,1));
-      PUT(FTRP(ptr),PACK(asize,1));
-      void *bp=NEXT_BLKP(ptr);
-      PUT(HDRP(bp),PACK(oldsize-asize,0));
-      PUT(FTRP(bp),PACK(oldsize-asize,0));
-      coalesce(bp);
-    }else{
-      //do nothing
-    }
-    return ptr;
-  }else{
-    size_t totalsize=GET_ALLOC(HDRP(PREV_BLKP(ptr)))==0?
-      GET_SIZE(HDRP(PREV_BLKP(ptr))):0;
-    totalsize+=GET_ALLOC(HDRP(NEXT_BLKP(ptr)))==0?
-      GET_SIZE(HDRP(NEXT_BLKP(ptr))):0;
-    totalsize+=oldsize;
-    //   printf("total size is %d\n",totalsize);
-    if(asize<=totalsize){
-      if(GET_ALLOC(HDRP(PREV_BLKP(ptr)))==0){
-	newptr=PREV_BLKP(ptr);
-      }else{
-	newptr=ptr;
-      }
-      unsigned int pred=GET(ptr);
-      unsigned int succ=GET(SUCC(ptr));
-      mm_free(ptr);
-      if(totalsize-asize>=2*DSIZE){
-	// split
-	place(newptr,totalsize);
-	PUT(HDRP(newptr), PACK(asize, 1));
-	memmove(newptr,ptr,oldsize-2*WSIZE);
-	PUT(FTRP(newptr), PACK(asize, 1)); 
-	PUT(PRED(newptr),pred);
-	PUT(SUCC(newptr),succ);
-	void *bp = NEXT_BLKP(newptr);
-	PUT(HDRP(bp), PACK(totalsize-asize, 0));
-	PUT(FTRP(bp), PACK(totalsize-asize, 0));
-	coalesce(bp);
-      }else{
-	place(newptr,totalsize);
-	memmove(newptr,ptr,oldsize-0*WSIZE);
-	PUT(PRED(newptr),pred);
-	PUT(SUCC(newptr),succ);
-      }
-       printf("after realloc\n");
-       checkheap();
-      return newptr;
-    }else{// the neibors space not enough to realloc 
-      newptr=mm_malloc(size);
-      if(!newptr){
-	return 0;
-      }
-      memcpy(newptr,ptr,oldsize-0*WSIZE);
-      mm_free(ptr);
-       printf("after realloc\n");
-       checkheap();
-      return newptr;
-    }
+  /* if reallloc fails the original block if left untouched */
+  if(!newptr){
+    return 0;
   }
+
+  /* Copy the old data */
+  oldsize = GET_SIZE(HDRP(ptr));
+  if(size<oldsize)
+    oldsize =size;
+  memcpy(newptr,ptr,oldsize);
+  
+  mm_free(ptr);
+  return newptr;
 }
 
 /*
@@ -548,26 +441,26 @@ static void place(void *bp, size_t asize)
 /* $end mmplace-proto */
 {
   size_t csize = GET_SIZE(HDRP(bp));   
-  /* update the header */
-  void *lh=get_head(csize);
-  char *tmpp;
-  if((void *)GET(lh)==bp){
-    PUT(lh,GET(SUCC(bp)));
-    if(GET(SUCC(bp))!=NULL){
-      PUT(PRED(GET(SUCC(bp))),NULL);
-    }
-  }else{
-    for(tmpp=(char *)GET(lh);(GET(SUCC(tmpp))!=NULL)
-	  &&(GET(SUCC(tmpp))!=bp);tmpp=GET(SUCC(tmpp))){}
-    if(GET(SUCC(tmpp))==NULL){
-      printf("error from coalesce case 2\n");
-    }else{
-      PUT(SUCC(tmpp),GET(SUCC(bp)));
+    /* update the header */
+   void *lh=get_head(csize);
+    char *tmpp;
+    if((void *)GET(lh)==bp){
+      PUT(lh,GET(SUCC(bp)));
       if(GET(SUCC(bp))!=NULL){
-	PUT(PRED(GET(SUCC(bp))),tmpp);
+	PUT(PRED(GET(SUCC(bp))),NULL);
       }
-    }
-  }  
+    }else{
+      for(tmpp=(char *)GET(lh);(GET(SUCC(tmpp))!=NULL)
+	    &&(GET(SUCC(tmpp))!=bp);tmpp=GET(SUCC(tmpp))){}
+      if(GET(SUCC(tmpp))==NULL){
+	printf("error from coalesce case 2\n");
+      }else{
+	PUT(SUCC(tmpp),GET(SUCC(bp)));
+	if(GET(SUCC(bp))!=NULL){
+	  PUT(PRED(GET(SUCC(bp))),tmpp);
+	}
+      }
+    }  
   if ((csize - asize) >= (2*DSIZE)) { 
     PUT(HDRP(bp), PACK(asize, 1));
     PUT(FTRP(bp), PACK(asize, 1)); 
@@ -654,12 +547,12 @@ void checkheap()
   char *bp = heap_listp;
   int verbose=1;
   /*
-    if (verbose)
+  if (verbose)
     printf("Heap (%p):\n", heap_listp);
 
-    if ((GET_SIZE(HDRP(heap_listp)) != DSIZE) || !GET_ALLOC(HDRP(heap_listp)))
+  if ((GET_SIZE(HDRP(heap_listp)) != DSIZE) || !GET_ALLOC(HDRP(heap_listp)))
     printf("Bad prologue header\n");
-    checkblock(heap_listp);
+  checkblock(heap_listp);
   */
 
   for (bp =(char *)heap_listp+24*WSIZE; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp)) {
